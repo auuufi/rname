@@ -12,7 +12,10 @@ fn generate_random_name(length: usize) -> String {
 }
 
 fn rename_file(current_name: &PathBuf, new_name: &PathBuf) {
-    rename(current_name, new_name).expect("Failed to rename the file");
+    if let Err(err) = rename(current_name, new_name) {
+        eprintln!("Error when renaming a file: {}", err);
+        exit(1);
+    }
 }
 
 fn main() {
@@ -22,23 +25,23 @@ fn main() {
     {
         let mut parser = ArgumentParser::new();
 
-        parser.set_description("Renaming files with random names");
+        parser.set_description("Rename files with random names");
         parser
             .refer(&mut file)
-            .add_argument("<FILE>", List, "Current name of the file(s)")
+            .add_argument("<FILE>", List, "List of files to be renamed")
             .required();
         parser
             .refer(&mut length)
             .add_option(
                 &["-l", "--length"],
                 Store,
-                "Length of the random name (default: 20)",
+                "Random name length (default: 20)",
             )
             .metavar("<LENGTH>");
         parser.add_option(
             &["-v", "--version"],
             Print(env!("CARGO_PKG_VERSION").to_string()),
-            "Show version",
+            "Print version information",
         );
 
         match parser.parse_args() {
