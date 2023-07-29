@@ -1,7 +1,10 @@
 use argparse::{ArgumentParser, List, Print, Store};
-use glob::glob;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
-use std::{fs::rename, path::PathBuf, process::exit};
+use std::{
+    fs::rename,
+    path::{Path, PathBuf},
+    process::exit,
+};
 
 fn generate_random_name(length: usize) -> String {
     thread_rng()
@@ -11,7 +14,7 @@ fn generate_random_name(length: usize) -> String {
         .collect()
 }
 
-fn rename_file(current_name: &PathBuf, new_name: &PathBuf) {
+fn rename_file(current_name: &Path, new_name: &Path) {
     if let Err(err) = rename(current_name, new_name) {
         eprintln!("Error when renaming a file: {}", err);
         exit(1);
@@ -19,7 +22,7 @@ fn rename_file(current_name: &PathBuf, new_name: &PathBuf) {
 }
 
 fn main() {
-    let mut file: Vec<String> = Vec::new();
+    let mut files: Vec<PathBuf> = Vec::new();
     let mut length: usize = 20;
 
     {
@@ -27,8 +30,8 @@ fn main() {
 
         parser.set_description("Rename files with random names");
         parser
-            .refer(&mut file)
-            .add_argument("<FILE>", List, "List of files to be renamed")
+            .refer(&mut files)
+            .add_argument("<FILES>", List, "List of files to be renamed")
             .required();
         parser
             .refer(&mut length)
@@ -46,20 +49,15 @@ fn main() {
 
         match parser.parse_args() {
             Ok(()) => {}
-            Err(x) => {
-                exit(x);
+            Err(err) => {
+                exit(err);
             }
         }
     }
 
-    let mut files: Vec<PathBuf> = Vec::new();
-
-    for pattern in &file {
-        let mut paths: Vec<PathBuf> = glob(pattern)
-            .expect("Failed to read glob pattern")
-            .filter_map(Result::ok)
-            .collect();
-        files.append(&mut paths)
+    if files.is_empty() {
+        eprintln!("No files provided for renaming");
+        exit(1);
     }
 
     for current_name in files {
